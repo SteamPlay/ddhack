@@ -53,8 +53,6 @@ int gSmooth = 0;
 int gShowLogo = 0;
 int gHalfAndHalf = 0;
 int gOldLCD = 0;
-int gIgnoreAspect = 0;
-int gVsync = 0;
 int gScanDouble = 0;
 int gAltWinPos = 0;
 int gBlurWc3Video = 0;
@@ -195,7 +193,7 @@ void updatescreen()
 	{
 		wc3video = 1;
 
-		for (i = 0; wc3video && i < gScreenWidth; i++)
+		for (i = 0; wc3video && i < gScreenHeight; i++)
 		{
 			// in wc3, only places where these two horizontal spans are
 			// black is when we're viewing video.
@@ -209,10 +207,10 @@ void updatescreen()
 		{
 			if (wc3video)
 			{
-				for (i = 71; i < gScreenHeight - 70; i+=2)
+				for (i = 2; i < gScreenWidth; i+=2)
 					memcpy(gPrimarySurface->mSurfaceData + gPrimarySurface->mPitch * (i-1),
 					gPrimarySurface->mSurfaceData + gPrimarySurface->mPitch * i,
-					gScreenWidth);			
+					gScreenWidth * 2);			
 			}
 		}
 
@@ -247,22 +245,32 @@ void updatescreen()
 			break;
 		case 16:
 			{
-				// wc4 16bit mode is actually 15bit - 1:5:5:5
+				// abe games use true 16bit mode - RGB565 
 				unsigned short * surf = (unsigned short *)gPrimarySurface->mSurfaceData;
 				int pitch = gPrimarySurface->mPitch / 2;
 				for (i = 0; i < gScreenHeight; i++)
 				{
 					for (j = 0; j < gScreenWidth; j++)
 					{
-						int pix = surf[pitch * i + j];				
+						int red_mask = 63488;
+                        int green_mask = 2016;
+                        int blue_mask = 31;
+                        int pix = surf[pitch * i + j];				
 						
-						int red   = (pix >> 10) & ((1 << 5) - 1);
-						int green = (pix >>  5) & ((1 << 5) - 1);
-						int blue  = (pix >>  0) & ((1 << 5) - 1);
+						//int red   = (pix >> 10) & ((1 << 5) - 1);
+						//int green = (pix >>  5) & ((1 << 5) - 1);
+						//int blue  = (pix >>  0) & ((1 << 5) - 1);
+                        int red = (pix & red_mask) >> 11;
+                        int green = (pix & green_mask) >> 5;
+                        int blue = (pix & blue_mask);
+
 						
 						// fill bottom bits
+						//red = (red << 3) | (red >> 2);
+						//green = (green << 3) | (green >> 2);
+						//blue = (blue << 3) | (blue >> 2);
 						red = (red << 3) | (red >> 2);
-						green = (green << 3) | (green >> 2);
+						green = (green << 2) | (green >> 2);
 						blue = (blue << 3) | (blue >> 2);
 						
 
@@ -426,29 +434,15 @@ void updatescreen()
         glColor3f(1.0f,1.0f,1.0f); 
 	}
 
-	if (gIgnoreAspect)
-	{
-		w = (float)gScreenWidth / (float)tex_w;
-		h = (float)gScreenHeight / (float)tex_h;
-		// Do the actual rendering.
-		glBegin(GL_TRIANGLE_FAN);
-		glTexCoord2f(0,0);              glVertex2f(-1,  1);
-		glTexCoord2f(w,0);        glVertex2f( 1,  1);
-		glTexCoord2f(w,h);  glVertex2f( 1, -1);	
-		glTexCoord2f(0,h);        glVertex2f(-1, -1);
-		glEnd();
-	}
-	else
-	{
-		// Do the actual rendering.
-		glBegin(GL_TRIANGLE_FAN);
-		glTexCoord2f(0,0); glVertex2f( -w,  h);
-		glTexCoord2f(u,0); glVertex2f(  w,  h);
-		glTexCoord2f(u,v); glVertex2f(  w, -h);	
-		glTexCoord2f(0,v); glVertex2f( -w, -h);
-		glEnd();
+	// Do the actual rendering.
 
-	}
+    glBegin(GL_TRIANGLE_FAN);
+        glTexCoord2f(0,0); glVertex2f( -w,  h);
+        glTexCoord2f(u,0); glVertex2f(  w,  h);
+        glTexCoord2f(u,v); glVertex2f(  w, -h);	
+        glTexCoord2f(0,v); glVertex2f( -w, -h);
+    glEnd();
+    
 
 	SwapBuffers(gWindowDC);
 }
@@ -571,7 +565,7 @@ void init_gl()
     PIXELFORMATDESCRIPTOR pfd;
     pfd.nSize=sizeof(PIXELFORMATDESCRIPTOR);                             // Size 
     pfd.nVersion=1;                                                      // Version
-    pfd.dwFlags=PFD_DRAW_TO_WINDOW|PFD_SUPPORT_OPENGL;  // Selected flags
+    pfd.dwFlags=PFD_DRAW_TO_WINDOW|PFD_SUPPORT_OPENGL|PFD_DOUBLEBUFFER;  // Selected flags
     pfd.iPixelType=PFD_TYPE_RGBA;                                        // Pixelformat
     pfd.cColorBits=16;                                                   // Pixel depth
     pfd.cDepthBits=16;                                                   // Zbuffer depth
@@ -591,23 +585,6 @@ void init_gl()
 	} while (!gOpenGLRC);
 
 	wglMakeCurrent(gWindowDC, gOpenGLRC);
-
-	char *glext = (char *)glGetString(GL_EXTENSIONS);
-	if(glext && strstr(glext, "WGL_EXT_swap_control"))
-	{
-		BOOL (APIENTRY *wglSwapIntervalEXT)(int) = (BOOL (APIENTRY *)(int))wglGetProcAddress("wglSwapIntervalEXT");
-		if(wglSwapIntervalEXT)
-		{
-			if(gVsync)
-			{
-				wglSwapIntervalEXT(1);
-			}
-			else
-			{
-				wglSwapIntervalEXT(0);
-			}
-		}
-	}
 
 	ShowWindow(gHwnd, SW_SHOW);
 	SetForegroundWindow(gHwnd);
@@ -826,10 +803,6 @@ void InitInstance(HANDLE hModule)
 					gBlurWc3Video = 1;
 				if (_stricmp(t, "wc3smallvid") == 0)
 					gWc3SmallVid = 1;
-				if (_stricmp(t, "ignoreaspect") == 0)
-					gIgnoreAspect = 1;
-				if (_stricmp(t, "vsync") == 0)
-					gVsync = 1;
 				
 				t = c + 1;				
 			}
