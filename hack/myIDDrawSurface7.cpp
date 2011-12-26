@@ -2,9 +2,9 @@
 #include <varargs.h>
 
 
-myIDDrawSurface1::myIDDrawSurface1(LPDDSURFACEDESC a)
+myIDDrawSurface7::myIDDrawSurface7(LPDDSURFACEDESC2 a)
 {
-	logf("myIDDrawSurface1 Constructor");
+	logf("myIDDrawSurface7 Constructor");
 
 	mWidth = gScreenWidth;
 	mHeight = gScreenHeight;
@@ -13,6 +13,8 @@ myIDDrawSurface1::myIDDrawSurface1(LPDDSURFACEDESC a)
 
 	if (a->dwFlags & DDSD_WIDTH) mWidth = a->dwWidth;
 	if (a->dwFlags & DDSD_HEIGHT) mHeight = a->dwHeight;
+	gScreenWidth = mWidth;
+	gScreenHeight = mHeight;
 	// we don't need no stinking extra pitch bytes..
 	mPitch = mWidth * gScreenBits / 8;
 	
@@ -42,9 +44,9 @@ myIDDrawSurface1::myIDDrawSurface1(LPDDSURFACEDESC a)
 }
 
 
-myIDDrawSurface1::~myIDDrawSurface1(void)
+myIDDrawSurface7::~myIDDrawSurface7(void)
 {
-	logf("myIDDrawSurface1 Destructor");
+	logf("myIDDrawSurface7 Destructor");
 
 	if (this == gPrimarySurface)
 	{
@@ -56,9 +58,9 @@ myIDDrawSurface1::~myIDDrawSurface1(void)
 }
 
 
-HRESULT __stdcall myIDDrawSurface1::QueryInterface (REFIID, LPVOID FAR * b)
+HRESULT __stdcall myIDDrawSurface7::QueryInterface (REFIID, LPVOID FAR * b)
 {
-	logf("myIDDrawSurface1::QueryInterface");
+	logf("myIDDrawSurface7::QueryInterface");
 	
 	*b = NULL;
 
@@ -66,16 +68,16 @@ HRESULT __stdcall myIDDrawSurface1::QueryInterface (REFIID, LPVOID FAR * b)
 }
 
 
-ULONG   __stdcall myIDDrawSurface1::AddRef(void)
+ULONG   __stdcall myIDDrawSurface7::AddRef(void)
 {
-	logf("myIDDrawSurface1::AddRef");
+	logf("myIDDrawSurface7::AddRef");
 	return 1;
 }
 
 
-ULONG   __stdcall myIDDrawSurface1::Release(void)
+ULONG   __stdcall myIDDrawSurface7::Release(void)
 {
-	logf("myIDDrawSurface1::Release");
+	logf("myIDDrawSurface7::Release");
 	delete this;
 	
 	return 0;
@@ -83,23 +85,23 @@ ULONG   __stdcall myIDDrawSurface1::Release(void)
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::AddAttachedSurface(LPDIRECTDRAWSURFACE a)
+HRESULT  __stdcall myIDDrawSurface7::AddAttachedSurface(LPDIRECTDRAWSURFACE7 a)
 {
-	logf("myIDDrawSurface1::AddAttachedSurface");
+	logf("myIDDrawSurface7::AddAttachedSurface");
 	return DDERR_UNSUPPORTED;
 }
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::AddOverlayDirtyRect(LPRECT a)
+HRESULT  __stdcall myIDDrawSurface7::AddOverlayDirtyRect(LPRECT a)
 {
-	logf("myIDDrawSurface1::AddOverlayDirtyRect");
+	logf("myIDDrawSurface7::AddOverlayDirtyRect");
 	return DDERR_UNSUPPORTED;
 }
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::Blt(LPRECT a,LPDIRECTDRAWSURFACE b, LPRECT c,DWORD d, LPDDBLTFX e)
+HRESULT  __stdcall myIDDrawSurface7::Blt(LPRECT a,LPDIRECTDRAWSURFACE7 b, LPRECT c,DWORD d, LPDDBLTFX e)
 {
 	if (a && c)
 		logf("myIDDrawSurface7::Blt([%d,%d,%d,%d],%08x,[%d,%d,%d,%d],%08x,%08x)",
@@ -127,15 +129,15 @@ HRESULT  __stdcall myIDDrawSurface1::Blt(LPRECT a,LPDIRECTDRAWSURFACE b, LPRECT 
 			b,
 			d,
 			e ? e->dwDDFX : 0);
-
+	
 	int i, j;
-	myIDDrawSurface1 *src = NULL;
-	if (b) src = (myIDDrawSurface1*)b;
+	myIDDrawSurface7 *src = NULL;
+	if (b) src = (myIDDrawSurface7*)b;
 	int usingColorKey = d & DDBLT_KEYDEST || d & DDBLT_KEYSRC || d & DDBLT_ALPHADEST;
 	unsigned char colorKey = 0;
 	if (usingColorKey)
 		colorKey = (unsigned char) (d & DDBLT_KEYDEST ? mDestColorKey.dwColorSpaceLowValue : src->mSrcColorKey.dwColorSpaceLowValue);
-	
+
 	if (b == NULL)
 	{
 		if (a)
@@ -154,7 +156,7 @@ HRESULT  __stdcall myIDDrawSurface1::Blt(LPRECT a,LPDIRECTDRAWSURFACE b, LPRECT 
 		{
 			for (i = c->top; i < c->bottom; i++)
 				for (j = c->left; j < c->right; j++)
-					mSurfaceData[(i + (480 - c->bottom)/2) * mPitch + j + 160] = src->mSurfaceData[i * src->mPitch + j];		
+					mSurfaceData[(i + (480 - c->bottom)/2) * mPitch + j + 160] = src->mSurfaceData[i * src->mPitch + j];
 		}
 		else
 		{
@@ -163,7 +165,7 @@ HRESULT  __stdcall myIDDrawSurface1::Blt(LPRECT a,LPDIRECTDRAWSURFACE b, LPRECT 
 				for (i = 0; i < a->bottom - a->top; i++)
 					for (j = 0; j < a->right - a->left; j++)
 						if (!usingColorKey || src->mSurfaceData[(i + c->top) * src->mPitch + j + c->left] != colorKey)
-							mSurfaceData[(i + a->top) * mPitch + j + a->left] = src->mSurfaceData[(i + c->top) * src->mPitch + j + c->left];		
+							mSurfaceData[(i + a->top) * mPitch + j + a->left] = src->mSurfaceData[(i + c->top) * src->mPitch + j + c->left];
 			}
 			else
 			{
@@ -181,18 +183,18 @@ HRESULT  __stdcall myIDDrawSurface1::Blt(LPRECT a,LPDIRECTDRAWSURFACE b, LPRECT 
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::BltBatch(LPDDBLTBATCH a, DWORD b, DWORD c)
+HRESULT  __stdcall myIDDrawSurface7::BltBatch(LPDDBLTBATCH a, DWORD b, DWORD c)
 {
-	logf("myIDDrawSurface1::BltBatch");
+	logf("myIDDrawSurface7::BltBatch");
 	return DDERR_UNSUPPORTED;
 }
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::BltFast(DWORD a,DWORD b,LPDIRECTDRAWSURFACE c, LPRECT d,DWORD e)
+HRESULT  __stdcall myIDDrawSurface7::BltFast(DWORD a,DWORD b,LPDIRECTDRAWSURFACE7 c, LPRECT d,DWORD e)
 {
-	logf("myIDDrawSurface1::BltFast(%d,%d,%08x,[%d,%d,%d,%d],%08x)",a,b,c,d->top,d->left,d->bottom,d->right,e);
-	myIDDrawSurface1 *src = (myIDDrawSurface1*)c;
+	logf("myIDDrawSurface7::BltFast(%d,%d,%08x,[%d,%d,%d,%d],%08x)",a,b,c,d->top,d->left,d->bottom,d->right,e);
+	myIDDrawSurface7 *src = (myIDDrawSurface7*)c;
 	int usingColorKey = e & DDBLT_KEYDEST || e & DDBLT_KEYSRC || e & DDBLT_ALPHADEST;
 	unsigned char colorKey = 0;
 	if (usingColorKey)
@@ -208,42 +210,42 @@ HRESULT  __stdcall myIDDrawSurface1::BltFast(DWORD a,DWORD b,LPDIRECTDRAWSURFACE
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::DeleteAttachedSurface(DWORD a,LPDIRECTDRAWSURFACE b)
+HRESULT  __stdcall myIDDrawSurface7::DeleteAttachedSurface(DWORD a,LPDIRECTDRAWSURFACE7 b)
 {
-	logf("myIDDrawSurface1::DeleteAttachedSurface");
+	logf("myIDDrawSurface7::DeleteAttachedSurface");
 	return DDERR_UNSUPPORTED;
 }
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::EnumAttachedSurfaces(LPVOID a,LPDDENUMSURFACESCALLBACK b)
+HRESULT  __stdcall myIDDrawSurface7::EnumAttachedSurfaces(LPVOID a,LPDDENUMSURFACESCALLBACK7 b)
 {
-	logf("myIDDrawSurface1::EnumAttachedSurfaces");
+	logf("myIDDrawSurface7::EnumAttachedSurfaces");
 	return DDERR_UNSUPPORTED;
 }
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::EnumOverlayZOrders(DWORD a,LPVOID b,LPDDENUMSURFACESCALLBACK c)
+HRESULT  __stdcall myIDDrawSurface7::EnumOverlayZOrders(DWORD a,LPVOID b,LPDDENUMSURFACESCALLBACK7 c)
 {
-	logf("myIDDrawSurface1::EnumOverlayZOrders");
+	logf("myIDDrawSurface7::EnumOverlayZOrders");
 	return DDERR_UNSUPPORTED;
 }
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::Flip(LPDIRECTDRAWSURFACE a, DWORD b)
+HRESULT  __stdcall myIDDrawSurface7::Flip(LPDIRECTDRAWSURFACE7 a, DWORD b)
 {
-	logf("myIDDrawSurface1::Flip");
+	logf("myIDDrawSurface7::Flip");
 	updatescreen();
 	return DD_OK;
 }
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::GetAttachedSurface(LPDDSCAPS a, LPDIRECTDRAWSURFACE FAR * b)
+HRESULT  __stdcall myIDDrawSurface7::GetAttachedSurface(LPDDSCAPS2 a, LPDIRECTDRAWSURFACE7 FAR * b)
 {
-	logf("myIDDrawSurface1::GetAttachedSurface([%d], %08x)",
+	logf("myIDDrawSurface7::GetAttachedSurface([%d], %08x)",
 		a->dwCaps, b);
 
 	// wc3 and wc4 call this function to access the back buffer..
@@ -258,12 +260,12 @@ HRESULT  __stdcall myIDDrawSurface1::GetAttachedSurface(LPDDSCAPS a, LPDIRECTDRA
 	// On the other hand, you wouldn't have so much fun reading 
 	// this if I just deleted it and wrote the check, now would you?
 	
-	DDSURFACEDESC newdesc = mSurfaceDesc;
+	DDSURFACEDESC2 newdesc = mSurfaceDesc;
 	
 	newdesc.ddsCaps.dwCaps |= a->dwCaps;	
 	newdesc.ddsCaps.dwCaps &= ~DDSCAPS_PRIMARYSURFACE;
 
-	myIDDrawSurface1 * n = new myIDDrawSurface1(&newdesc);
+	myIDDrawSurface7 * n = new myIDDrawSurface7(&newdesc);
 	n->mSurfaceData = mSurfaceData;
 	*b = n;
 	gBackBuffer = n;
@@ -273,36 +275,36 @@ HRESULT  __stdcall myIDDrawSurface1::GetAttachedSurface(LPDDSCAPS a, LPDIRECTDRA
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::GetBltStatus(DWORD a)
+HRESULT  __stdcall myIDDrawSurface7::GetBltStatus(DWORD a)
 {
-	logf("myIDDrawSurface1::GetBltStatus");
+	logf("myIDDrawSurface7::GetBltStatus");
 	// we're always ready for bitblts
 	return DD_OK;
 }
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::GetCaps(LPDDSCAPS a)
+HRESULT  __stdcall myIDDrawSurface7::GetCaps(LPDDSCAPS2 a)
 {
-	logf("myIDDrawSurface1::GetCaps");
+	logf("myIDDrawSurface7::GetCaps");
 	*a = mCaps;
 	return DD_OK;
 }
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::GetClipper(LPDIRECTDRAWCLIPPER FAR* a)
+HRESULT  __stdcall myIDDrawSurface7::GetClipper(LPDIRECTDRAWCLIPPER FAR* a)
 {
-	logf("myIDDrawSurface1::GetClipper");
+	logf("myIDDrawSurface7::GetClipper");
 	a = (LPDIRECTDRAWCLIPPER *) mClipper;
 	return DD_OK;
 }
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::GetColorKey(DWORD a, LPDDCOLORKEY b)
+HRESULT  __stdcall myIDDrawSurface7::GetColorKey(DWORD a, LPDDCOLORKEY b)
 {
-	logf("myIDDrawSurface1::GetColorKey");
+	logf("myIDDrawSurface7::GetColorKey");
 	if (a & DDCKEY_DESTBLT)
 		b = &mDestColorKey;
 	else if (a & DDCKEY_SRCBLT)
@@ -314,43 +316,44 @@ HRESULT  __stdcall myIDDrawSurface1::GetColorKey(DWORD a, LPDDCOLORKEY b)
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::GetDC(HDC FAR *a)
+HRESULT  __stdcall myIDDrawSurface7::GetDC(HDC FAR *a)
 {
-	logf("myIDDrawSurface1::GetDC");
+	logf("myIDDrawSurface7::GetDC");
 	*a = GetDC2(gHwnd);
+	gGDI = 1;
 	return DD_OK;
 }
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::GetFlipStatus(DWORD a)
+HRESULT  __stdcall myIDDrawSurface7::GetFlipStatus(DWORD a)
 {
-	logf("myIDDrawSurface1::GetFlipStatus");
+	logf("myIDDrawSurface7::GetFlipStatus");
 	return DDERR_UNSUPPORTED;
 }
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::GetOverlayPosition(LPLONG a, LPLONG b)
+HRESULT  __stdcall myIDDrawSurface7::GetOverlayPosition(LPLONG a, LPLONG b)
 {
-	logf("myIDDrawSurface1::GetOverlayPosition");
+	logf("myIDDrawSurface7::GetOverlayPosition");
 	return DDERR_UNSUPPORTED;
 }
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::GetPalette(LPDIRECTDRAWPALETTE FAR*a)
+HRESULT  __stdcall myIDDrawSurface7::GetPalette(LPDIRECTDRAWPALETTE FAR*a)
 {
-	logf("myIDDrawSurface1::GetPalette");
+	logf("myIDDrawSurface7::GetPalette");
 	*a = mCurrentPalette;
 	return DD_OK;
 }
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::GetPixelFormat(LPDDPIXELFORMAT a)
+HRESULT  __stdcall myIDDrawSurface7::GetPixelFormat(LPDDPIXELFORMAT a)
 {
-	logf("myIDDrawSurface1::GetPixelFormat");
+	logf("myIDDrawSurface7::GetPixelFormat");
 	// Return codes based on what ddwrapper reported..
 	if (gScreenBits == 8)
 	{
@@ -392,9 +395,9 @@ HRESULT  __stdcall myIDDrawSurface1::GetPixelFormat(LPDDPIXELFORMAT a)
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::GetSurfaceDesc(LPDDSURFACEDESC a)
+HRESULT  __stdcall myIDDrawSurface7::GetSurfaceDesc(LPDDSURFACEDESC2 a)
 {
-	logf("myIDDrawSurface1::GetSurfaceDesc([%d %d %d %d %d %d %d %d])",
+	logf("myIDDrawSurface7::GetSurfaceDesc([%d %d %d %d %d %d %d %d])",
 		a->dwSize, a->dwFlags, a->dwWidth, a->dwHeight, a->lPitch, a->dwBackBufferCount,
 		a->lpSurface, a->ddsCaps.dwCaps);
 	*a = mSurfaceDesc;
@@ -439,24 +442,24 @@ HRESULT  __stdcall myIDDrawSurface1::GetSurfaceDesc(LPDDSURFACEDESC a)
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::Initialize(LPDIRECTDRAW a, LPDDSURFACEDESC b)
+HRESULT  __stdcall myIDDrawSurface7::Initialize(LPDIRECTDRAW a, LPDDSURFACEDESC2 b)
 {
-	logf("myIDDrawSurface1::Initialize");
+	logf("myIDDrawSurface7::Initialize");
 	return DDERR_UNSUPPORTED;
 }
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::IsLost()
+HRESULT  __stdcall myIDDrawSurface7::IsLost()
 {
-	logf("myIDDrawSurface1::IsLost");
+	logf("myIDDrawSurface7::IsLost");
 	// We're never lost..
 	return DD_OK;
 }
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::Lock(LPRECT a,LPDDSURFACEDESC b,DWORD aFlags,HANDLE d)
+HRESULT  __stdcall myIDDrawSurface7::Lock(LPRECT a,LPDDSURFACEDESC2 b,DWORD aFlags,HANDLE d)
 {
 	char *extra = "";
 	if (this == gPrimarySurface)
@@ -465,15 +468,15 @@ HRESULT  __stdcall myIDDrawSurface1::Lock(LPRECT a,LPDDSURFACEDESC b,DWORD aFlag
 		extra = " backbuffer";	
 
 	if (a)	
-		logf("myIDDrawSurface1::Lock([%d,%d,%d,%d],%08x,%d,%d)%s",a->top,a->left,a->bottom,a->right,b,aFlags,d,extra);
+		logf("myIDDrawSurface7::Lock([%d,%d,%d,%d],%08x,%d,%d)%s",a->top,a->left,a->bottom,a->right,b,aFlags,d,extra);
 	else
-		logf("myIDDrawSurface1::Lock([null],%08x,%d,%d)%s",b,aFlags,d,extra);
+		logf("myIDDrawSurface7::Lock([null],%08x,%d,%d)%s",b,aFlags,d,extra);
 
 	gGDI = 0;
 
 	*b = mSurfaceDesc;
 
-	b->dwFlags |= DDSD_LPSURFACE | DDSD_WIDTH | DDSD_HEIGHT | DDSD_PITCH;
+	b->dwFlags |= DDSD_LPSURFACE | DDSD_WIDTH | DDSD_HEIGHT | DDSD_PITCH | DDSD_CAPS;
 	b->lpSurface = mSurfaceData;
 
 	b->dwWidth = mWidth;
@@ -485,35 +488,35 @@ HRESULT  __stdcall myIDDrawSurface1::Lock(LPRECT a,LPDDSURFACEDESC b,DWORD aFlag
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::ReleaseDC(HDC a)
+HRESULT  __stdcall myIDDrawSurface7::ReleaseDC(HDC a)
 {
-	logf("myIDDrawSurface1::ReleaseDC");
+	logf("myIDDrawSurface7::ReleaseDC");
 	return DD_OK;
 }
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::Restore()
+HRESULT  __stdcall myIDDrawSurface7::Restore()
 {
-	logf("myIDDrawSurface1::Restore");
+	logf("myIDDrawSurface7::Restore");
 	// we can't lose surfaces, so..
 	return DD_OK;
 }
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::SetClipper(LPDIRECTDRAWCLIPPER a)
+HRESULT  __stdcall myIDDrawSurface7::SetClipper(LPDIRECTDRAWCLIPPER a)
 {
-	logf("myIDDrawSurface1::SetClipper");
+	logf("myIDDrawSurface7::SetClipper");
 	mClipper = (myIDDrawClipper *) a;
 	return DD_OK;
 }
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::SetColorKey(DWORD a, LPDDCOLORKEY b)
+HRESULT  __stdcall myIDDrawSurface7::SetColorKey(DWORD a, LPDDCOLORKEY b)
 {
-	logf("myIDDrawSurface1::SetColorKey");
+	logf("myIDDrawSurface7::SetColorKey");
 	if (a & DDCKEY_DESTBLT)
 		mDestColorKey = *b;
 	else if (a & DDCKEY_SRCBLT)
@@ -525,24 +528,24 @@ HRESULT  __stdcall myIDDrawSurface1::SetColorKey(DWORD a, LPDDCOLORKEY b)
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::SetOverlayPosition(LONG a, LONG b)
+HRESULT  __stdcall myIDDrawSurface7::SetOverlayPosition(LONG a, LONG b)
 {
-	logf("myIDDrawSurface1::SetOverlayPosition");
+	logf("myIDDrawSurface7::SetOverlayPosition");
 	return DDERR_UNSUPPORTED;
 }
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::SetPalette(LPDIRECTDRAWPALETTE a)
+HRESULT  __stdcall myIDDrawSurface7::SetPalette(LPDIRECTDRAWPALETTE a)
 {
-	logf("myIDDrawSurface1::SetPalette(%08x)",a);
+	logf("myIDDrawSurface7::SetPalette(%08x)",a);
 	mCurrentPalette = (myIDDrawPalette *)a;
 	return NOERROR;
 }
 
-HRESULT  __stdcall myIDDrawSurface1::Unlock(LPVOID a)
+HRESULT  __stdcall myIDDrawSurface7::Unlock(LPRECT a)
 {
-	logf("myIDDrawSurface1::Unlock(%08x)",a);
+	logf("myIDDrawSurface7::Unlock(%08x)",a);
 
 	// if primary has been updated, flush..
 	// otherwise wc2 misses some screens
@@ -555,25 +558,128 @@ HRESULT  __stdcall myIDDrawSurface1::Unlock(LPVOID a)
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::UpdateOverlay(LPRECT a, LPDIRECTDRAWSURFACE b,LPRECT c,DWORD d, LPDDOVERLAYFX e)
+HRESULT  __stdcall myIDDrawSurface7::UpdateOverlay(LPRECT a, LPDIRECTDRAWSURFACE7 b,LPRECT c,DWORD d, LPDDOVERLAYFX e)
 {
-	logf("myIDDrawSurface1::UpdateOverlay");
+	logf("myIDDrawSurface7::UpdateOverlay");
 	return DDERR_UNSUPPORTED;
 }
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::UpdateOverlayDisplay(DWORD a)
+HRESULT  __stdcall myIDDrawSurface7::UpdateOverlayDisplay(DWORD a)
 {
-	logf("myIDDrawSurface1::UpdateOverlayDisplay");
+	logf("myIDDrawSurface7::UpdateOverlayDisplay");
 	return DDERR_UNSUPPORTED;
 }
 
 
 
-HRESULT  __stdcall myIDDrawSurface1::UpdateOverlayZOrder(DWORD a, LPDIRECTDRAWSURFACE b)
+HRESULT  __stdcall myIDDrawSurface7::UpdateOverlayZOrder(DWORD a, LPDIRECTDRAWSURFACE7 b)
 {
-	logf("myIDDrawSurface1::UpdateOverlayZOrder");
+	logf("myIDDrawSurface7::UpdateOverlayZOrder");
 	return DDERR_UNSUPPORTED;
 }
 
+
+
+HRESULT  __stdcall myIDDrawSurface7::GetDDInterface(LPVOID FAR *a)
+{
+	logf("myIDDrawSurface7::GetDDInterface");
+	return DDERR_UNSUPPORTED;
+}
+
+
+
+HRESULT  __stdcall myIDDrawSurface7::PageLock(DWORD a)
+{
+	logf("myIDDrawSurface7::PageLock");
+	return DDERR_UNSUPPORTED;
+}
+
+
+
+HRESULT  __stdcall myIDDrawSurface7::PageUnlock(DWORD a)
+{
+	logf("myIDDrawSurface7::PageUnlock");
+	return DDERR_UNSUPPORTED;
+}
+
+
+
+HRESULT  __stdcall myIDDrawSurface7::SetSurfaceDesc(LPDDSURFACEDESC2 a, DWORD b)
+{
+	logf("myIDDrawSurface7::SetSurfaceDesc");
+	return DDERR_UNSUPPORTED;
+}
+
+
+
+HRESULT  __stdcall myIDDrawSurface7::SetPrivateData(REFGUID a, LPVOID b, DWORD c, DWORD d)
+{
+	logf("myIDDrawSurface7::SetPrivateData");
+	return DDERR_UNSUPPORTED;
+}
+
+
+
+HRESULT  __stdcall myIDDrawSurface7::GetPrivateData(REFGUID a, LPVOID b, LPDWORD c)
+{
+	logf("myIDDrawSurface7::GetPrivateData");
+	return DDERR_UNSUPPORTED;
+}
+
+
+
+HRESULT  __stdcall myIDDrawSurface7::FreePrivateData(REFGUID a)
+{
+	logf("myIDDrawSurface7::FreePrivateData");
+	return DDERR_UNSUPPORTED;
+}
+
+
+
+HRESULT  __stdcall myIDDrawSurface7::GetUniquenessValue(LPDWORD a)
+{
+	logf("myIDDrawSurface7::GetUniquenessValue");
+	return DDERR_UNSUPPORTED;
+}
+
+
+
+HRESULT  __stdcall myIDDrawSurface7::ChangeUniquenessValue()
+{
+	logf("myIDDrawSurface7::ChangeUniquenessValue");
+	return DDERR_UNSUPPORTED;
+}
+
+
+
+HRESULT  __stdcall myIDDrawSurface7::SetPriority(DWORD a)
+{
+	logf("myIDDrawSurface7::SetPriority");
+	return DDERR_UNSUPPORTED;
+}
+
+
+
+HRESULT  __stdcall myIDDrawSurface7::GetPriority(LPDWORD a)
+{
+	logf("myIDDrawSurface7::GetPriority");
+	return DDERR_UNSUPPORTED;
+}
+
+
+
+HRESULT  __stdcall myIDDrawSurface7::SetLOD(DWORD a)
+{
+	logf("myIDDrawSurface7::SetLOD");
+	return DDERR_UNSUPPORTED;
+}
+
+
+
+HRESULT  __stdcall myIDDrawSurface7::GetLOD(LPDWORD a)
+{
+	logf("myIDDrawSurface7::GetLOD");
+	return DDERR_UNSUPPORTED;
+}

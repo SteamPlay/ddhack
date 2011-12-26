@@ -56,7 +56,12 @@ HRESULT  __stdcall myIDDrawPalette::GetCaps(LPDWORD a)
 HRESULT  __stdcall myIDDrawPalette::GetEntries(DWORD a,DWORD b,DWORD c,LPPALETTEENTRY d)
 {
 	logf("myIDDrawPalette::GetEntries");
-	return DDERR_UNSUPPORTED;
+	
+	if (d == NULL)
+		return DDERR_INVALIDPARAMS;
+
+	memcpy(d, &mPal[b], c * sizeof(*d));
+	return DD_OK;
 }
 
 
@@ -64,6 +69,7 @@ HRESULT  __stdcall myIDDrawPalette::GetEntries(DWORD a,DWORD b,DWORD c,LPPALETTE
 HRESULT  __stdcall myIDDrawPalette::Initialize(LPDIRECTDRAW a, DWORD b, LPPALETTEENTRY c)
 {
 	logf("myIDDrawPalette::Initialize");
+
 	return DDERR_UNSUPPORTED;
 }
 
@@ -72,7 +78,9 @@ HRESULT  __stdcall myIDDrawPalette::Initialize(LPDIRECTDRAW a, DWORD b, LPPALETT
 HRESULT  __stdcall myIDDrawPalette::SetEntries(DWORD aFlags,DWORD aStartEntry,DWORD aCount,LPPALETTEENTRY aPalEntries)
 {
 	logf("myIDDrawPalette::SetEntries(%d,%d,%d,%08x)", aFlags, aStartEntry, aCount, aPalEntries);
-	memcpy(mPal, aPalEntries, 256 * sizeof(PALETTEENTRY));
+	memcpy(mPal + aStartEntry, aPalEntries, aCount * sizeof(PALETTEENTRY));
+	for (int i = 0; i < 256; i++)
+		mPal[i].peFlags = 0;
 	updatescreen();
 	return NOERROR;
 }
